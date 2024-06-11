@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import './App.css';
 import { Type } from './Type';
 
@@ -23,28 +23,13 @@ const fetchResponse = async (message: string) => {
 	return await response.text();
 };
 
-// const tempMessage: Message = {
-// 	id: crypto.randomUUID(),
-// 	content: '...',
-// 	role: 'Assistant',
-// };
 
 function App() {
-	const [messages, setMessages] = useState<Message[]>([
-		// {
-		// 	id: crypto.randomUUID(),
-		// 	content: 'Hello, how are you?',
-		// 	role: 'Prompter',
-		// },
-		// {
-		// 	id: crypto.randomUUID(),
-		// 	content: 'I am good, thanks!',
-		// 	role: 'Assistant',
-		// },
-	]);
-
-	const [currentMessage, setCurrentMessage] = useState('');
+	const [messages, setMessages] = useState<Message[]>([]);
+	const [prompt, setPrompt] = useState('');
 	const [isLoading, setIsLoading] = useState(false);
+
+	const chatRef = useRef<HTMLDivElement>(null);
 
 	const sendMessage = async (message: string) => {
 		const messageId = crypto.randomUUID();
@@ -53,8 +38,11 @@ function App() {
 			content: message,
 			role: 'Prompter',
 		};
-		setCurrentMessage('');
+		setPrompt('');
 		setMessages((prev) => [...prev, promptMessage]);
+		setTimeout(() => {
+			chatRef.current?.scrollTo({ top: chatRef.current?.scrollHeight, behavior: 'smooth' });
+		}, 0);
 		setIsLoading(true);
 		const response = await fetchResponse(message);
 		const assistantMessage: Message = {
@@ -64,6 +52,7 @@ function App() {
 		};
 		setMessages((prev) => [...prev, assistantMessage]);
 		setIsLoading(false);
+		setTimeout(() => chatRef.current?.scrollTo({ top: chatRef.current?.scrollHeight, behavior: 'smooth' }), 100);
 	};
 
 	return (
@@ -72,7 +61,7 @@ function App() {
 				<img src='/barclays.png' alt='Barclays' />
 				<h2 className=''>GenAIFE</h2>
 			</div>
-			<div className='chat'>
+			<div className='chat' ref={chatRef} id='chat'>
 				{messages.map((message) => {
 					return (
 						<div
@@ -81,8 +70,8 @@ function App() {
 						>
 							<small className='role'>{message.role}</small>
 							<div className='content'>
-								{message.role === 'Assistant' ? (
-									<Type text={message.content} />
+								{ message.role === 'Assistant' ? (
+									<Type text={message.content} onLetter={() => chatRef.current?.scrollTo({ top: chatRef.current?.scrollHeight, behavior: 'smooth' })} />
 								) : (
 									message.content
 								)}
@@ -96,23 +85,23 @@ function App() {
 			</div>
 			{messages.length === 0 && (
 				<div className='welcome'>
-					<Type text='Welcome to GenAIFE, a gateway into Barclays infrastructure.' />
+					<Type onLetter={() => {}} text='Welcome to GenAIFE, a gateway into Barclays infrastructure.' />
 				</div>
 			)}
 			<div className='message-box'>
 				<textarea
-					value={currentMessage}
-					onChange={(e) => setCurrentMessage(e.target.value)}
+					value={prompt}
+					onChange={(e) => setPrompt(e.target.value)}
 					rows={4}
 					onKeyDown={(e) => {
 						if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-							sendMessage(currentMessage);
+							sendMessage(prompt);
 						}
 					}}
 				></textarea>
 				<button
-					disabled={isLoading || currentMessage.length === 0}
-					onClick={() => sendMessage(currentMessage)}
+					disabled={isLoading || prompt.length === 0}
+					onClick={() => sendMessage(prompt)}
 				>
 					Send
 				</button>
